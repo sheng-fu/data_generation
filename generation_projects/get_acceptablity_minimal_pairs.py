@@ -83,8 +83,15 @@ for key in ['adverbs', 'conditionals', 'negation', 'only', \
 # }
 
 case_config = OrderedDict()
-case_config['A'] = ('licensor=0-scope=1-npi_present=1', 'licensor=1-scope=1-npi_present=1')
-case_config['B'] = ('licensor=0-scope=1-npi_present=1', 'licensor=0-scope=1-npi_present=0')
+case_config['licensor=0-scope=1-npi_present=1'] = 'A'
+case_config['licensor=0-scope=1-npi_present=0'] = 'B'
+case_config['licensor=0-scope=0-npi_present=1'] = 'C'
+case_config['licensor=0-scope=0-npi_present=0'] = 'D'
+case_config['licensor=1-scope=1-npi_present=1'] = 'E'
+case_config['licensor=1-scope=1-npi_present=0'] = 'F'
+case_config['licensor=1-scope=0-npi_present=1'] = 'G'
+case_config['licensor=1-scope=0-npi_present=0'] = 'H'
+case_length = len(case_config.keys()[0])
 
 gpt_tokenizer = OpenAIGPTTokenizer.from_pretrained('openai-gpt')
 bert_tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
@@ -138,9 +145,9 @@ def extract_pairs(src, config, args):
             #     continue
             s0_txt = sents[sid_0]['txt']
             s1_txt = sents[sid_1]['txt']
-            s0_meta = sents[sid_0]['meta']
-            s1_meta = sents[sid_1]['meta']
-            pair_case = ';'.join([case for case, (cond_0, cond_1) in case_config.items() if (cond_0 in s0_meta) and (cond_1 in s1_meta)])
+            s0_meta = sents[sid_0]['meta'][-case_length:]
+            s1_meta = sents[sid_1]['meta'][-case_length:]
+            pair_case = '%s%s' % (case_config[s0_meta], case_config[s1_meta])
             inv = numpy.random.randint(0, 2)
             if inv:
                 outputs.append([src, s1_txt, s0_txt, 1, pair_case])
@@ -191,6 +198,7 @@ def extract_pairs(src, config, args):
 # column1: sent1, first sentence in each pair 
 # column2: sent2, second sentence in each pair
 # column3: label, whether the first sentence is acceptable
+# column4: case, which case this pair fall into
 # note that, every pair is made of one positive and one negative sentence
 
 def main(arguments):

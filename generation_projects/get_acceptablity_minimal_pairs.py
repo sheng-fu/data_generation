@@ -23,42 +23,43 @@ for key in ['adverbs', 'conditionals', 'negation', 'only', \
     data_config['NPI-%s' % key] = {
         'type': 'raw',
         'file': os.path.join('npi', 'environment=%s.tsv' % key),
+        'meta_id': 0,
         'label_id': 1,
         'sent_id': 3,
         'units': 0.5}
 # add 1 plurals dataset
-data_config['plurals'] = {
-    'type': 'raw',
-    'file': os.path.join('plurals', 'environment=collectivepredicates.tsv'),
-    'label_id': 1,
-    'sent_id': 3,
-    'units': 1}
-# add 1 long_distance dataset
-data_config['long_distance'] = {
-    'type': 'raw',
-    'file': os.path.join('long_distance/aux_agreement', 'dev.tsv'),
-    'label_id': 1,
-    'sent_id': 3,
-    'units': 1}
+# data_config['plurals'] = {
+#     'type': 'raw',
+#     'file': os.path.join('plurals', 'environment=collectivepredicates.tsv'),
+#     'label_id': 1,
+#     'sent_id': 3,
+#     'units': 1}
+# # add 1 long_distance dataset
+# data_config['long_distance'] = {
+#     'type': 'raw',
+#     'file': os.path.join('long_distance/aux_agreement', 'dev.tsv'),
+#     'label_id': 1,
+#     'sent_id': 3,
+#     'units':1 1}
 # add 3 qp_structure_dependence datasets
-data_config['npi_scope'] = {
-    'type': 'raw',
-    'file': os.path.join('alexs_qp_structure_dependence/npi_scope/10k/CoLA', 'dev.tsv'),
-    'label_id': 1,
-    'sent_id': 3,
-    'units': 1}
-data_config['polar_q'] = {
-    'type': 'raw',
-    'file': os.path.join('alexs_qp_structure_dependence/polar_q/10k', 'dev.tsv'),
-    'label_id': 1,
-    'sent_id': 3,
-    'units': 1}
-data_config['reflexive'] = {
-    'type': 'raw',
-    'file': os.path.join('alexs_qp_structure_dependence/reflexive/10k/CoLA', 'dev.tsv'),
-    'label_id': 1,
-    'sent_id': 3,
-    'units': 1}
+# data_config['npi_scope'] = {
+#     'type': 'raw',
+#     'file': os.path.join('alexs_qp_structure_dependence/npi_scope/10k/CoLA', 'dev.tsv'),
+#     'label_id': 1,
+#     'sent_id': 3,
+#     'units': 1}
+# data_config['polar_q'] = {
+#     'type': 'raw',
+#     'file': os.path.join('alexs_qp_structure_dependence/polar_q/10k', 'dev.tsv'),
+#     'label_id': 1,
+#     'sent_id': 3,
+#     'units': 1}
+# data_config['reflexive'] = {
+#     'type': 'raw',
+#     'file': os.path.join('alexs_qp_structure_dependence/reflexive/10k/CoLA', 'dev.tsv'),
+#     'label_id': 1,
+#     'sent_id': 3,
+#     'units': 1}
 
 # register paired data tsv files in paired_data_config
 # file: file path and name
@@ -66,23 +67,27 @@ data_config['reflexive'] = {
 # sent_id: column index of sentence text
 # units: maximum number of units of sentence pairs to extract from this tsv
 # add 2 datasets in linzen's paper
-data_config['linzen_goldberg_dupoux'] = {
-    'type': 'masked',
-    'file': os.path.join('linzen_goldberg', 'lgd_dataset.tsv'),
-    'masked_id': 2,
-    'key1_id': 3,
-    'key0_id': 4,
-    'units': 1.}
-data_config['marvin_linzen'] ={
-    'type': 'paired',
-    'file': os.path.join('linzen_goldberg', 'marvin_linzen_dataset.tsv'),
-    'sent1_id': 2,
-    'sent0_id': 3,
-    'units': 1.
-}
+# data_config['linzen_goldberg_dupoux'] = {
+#     'type': 'masked',
+#     'file': os.path.join('linzen_goldberg', 'lgd_dataset.tsv'),
+#     'masked_id': 2,
+#     'key1_id': 3,
+#     'key0_id': 4,
+#     'units': 1.}
+# data_config['marvin_linzen'] = {
+#     'type': 'paired',
+#     'file': os.path.join('linzen_goldberg', 'marvin_linzen_dataset.tsv'),
+#     'sent1_id': 2,
+#     'sent0_id': 3,
+#     'units': 1.
+# }
+
+case_config = OrderedDict()
+case_config['A'] = ('licensor=0-scope=1-npi_present=1', 'licensor=1-scope=1-npi_present=1')
+case_config['B'] = ('licensor=0-scope=1-npi_present=1', 'licensor=0-scope=1-npi_present=0')
 
 gpt_tokenizer = OpenAIGPTTokenizer.from_pretrained('openai-gpt')
-bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
+bert_tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
 
 def diff(seq_0, seq_1):
     return len([0 for i, j in zip(seq_0, seq_1) if i != j]) == 1  
@@ -100,11 +105,12 @@ def extract_pairs(src, config, args):
         with open(file_in, 'r') as tsv_in:
             tsv_in = csv.reader(tsv_in, delimiter='\t')
             for sent_id, line in enumerate(tsv_in):
+                sent_meta = line[config['meta_id']]
                 sent_txt = line[config['sent_id']]
                 sent_label = int(line[config['label_id']])
                 sent_gpt = gpt_tokenizer.tokenize(sent_txt)
                 sent_bert = bert_tokenizer.tokenize(sent_txt)
-                sents.append({'txt': sent_txt, 'lable': sent_label, \
+                sents.append({ 'meta': sent_meta, 'txt': sent_txt, 'lable': sent_label, \
                     'gpt': sent_gpt, 'bert': sent_bert})
                 att = (len(sent_gpt), len(sent_bert), sent_label)
                 if att not in att2id_dict:
@@ -124,20 +130,23 @@ def extract_pairs(src, config, args):
                         pairs.append((sid_0, sid_1))
         
         numpy.random.shuffle(pairs)
-        sents_used = [0 for sent in sents]
+        # sents_used = [0 for sent in sents]
         for (sid_0, sid_1) in pairs:
             if len(outputs) == int(args.unit_size * config['units']):
                 break
-            if sents_used[sid_0] or sents_used[sid_1]:
-                continue
+            # if sents_used[sid_0] or sents_used[sid_1]:
+            #     continue
             s0_txt = sents[sid_0]['txt']
             s1_txt = sents[sid_1]['txt']
+            s0_meta = sents[sid_0]['meta']
+            s1_meta = sents[sid_1]['meta']
+            pair_case = ';'.join([case for case, (cond_0, cond_1) in case_config.items() if (cond_0 in s0_meta) and (cond_1 in s1_meta)])
             inv = numpy.random.randint(0, 2)
             if inv:
-                outputs.append([src, s1_txt, s0_txt, 1])
+                outputs.append([src, s1_txt, s0_txt, 1, pair_case])
             else:
-                outputs.append([src, s0_txt, s1_txt, 0])
-            sents_used[sid_0] = sents_used[sid_1] = 1
+                outputs.append([src, s0_txt, s1_txt, 0, pair_case])
+            # sents_used[sid_0] = sents_used[sid_1] = 1
     
     elif config['type'] == 'paired' or config['type'] == 'masked':
 

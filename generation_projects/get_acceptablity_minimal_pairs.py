@@ -18,15 +18,18 @@ from pytorch_pretrained_bert import BertTokenizer, OpenAIGPTTokenizer
 # units: maximum number of units of sentence pairs to extract from this tsv
 data_config = OrderedDict()
 # add 7 NPI datasets
-for key in ['adverbs', 'conditionals', 'negation', 'only', \
-    'quantifiers', 'questions', 'superlative']:
+NPI_envs = ['adverbs', 'conditionals', 'negation', 'only', \
+    'quantifiers', 'questions', 'superlative']
+NPI_envs = ['adverbs']
+for key in NPI_envs:
     data_config['NPI-%s' % key] = {
         'type': 'raw',
         'file': os.path.join('npi', 'environment=%s.tsv' % key),
         'meta_id': 0,
         'label_id': 1,
         'sent_id': 3,
-        'units': 0.5}
+        'units': 1}
+
 # add 1 plurals dataset
 # data_config['plurals'] = {
 #     'type': 'raw',
@@ -91,7 +94,7 @@ case_config['licensor=1-scope=1-npi_present=1'] = 'E'
 case_config['licensor=1-scope=1-npi_present=0'] = 'F'
 case_config['licensor=1-scope=0-npi_present=1'] = 'G'
 case_config['licensor=1-scope=0-npi_present=0'] = 'H'
-case_length = len(case_config.keys()[0])
+case_length = len(list(case_config.keys())[0])
 
 gpt_tokenizer = OpenAIGPTTokenizer.from_pretrained('openai-gpt')
 bert_tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
